@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import logging
 
+from app.core.logger import setup as setup_logging
 from app.core.config import settings
 from app.api import router
 
@@ -17,7 +17,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # start up
-    pass
+    setup_logging()
     yield
     # shut down
     pass
