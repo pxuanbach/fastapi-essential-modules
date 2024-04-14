@@ -30,6 +30,8 @@ pydantic-settings = "^2.2.1"
 sentry-sdk = {extras = ["fastapi"], version = "^1.40.6"}
 psycopg2 = "^2.9.9"
 asyncpg = "^0.29.0"
+redis = {extras = ["hiredis"], version = "^5.0.3"}
+orjson = "^3.10.0"
 
 
 [tool.poetry.group.dev.dependencies]

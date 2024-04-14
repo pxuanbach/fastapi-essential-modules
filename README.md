@@ -2,10 +2,12 @@
 Essential modules for developing applications with FastAPI.
 This project uses [Python](https://www.python.org/) 3.10 as the environment and [Poetry](https://python-poetry.org/) as the package manager.
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M0U28LL)
 
 ## Table of Contents
 1. [Quickstart](#quickstart)
 2. [Migration](#migration)
+3. [Logging](#logging)
 
 ## Quickstart
 1. Open Terminal in this directory.

@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -5,6 +6,7 @@ from contextlib import asynccontextmanager
 
 from app.core.logger import setup as setup_logging
 from app.core.config import settings
+from app.core.redis import redis_client
 from app.api import router
 
 
@@ -18,9 +20,10 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 async def lifespan(app: FastAPI):
     # start up
     setup_logging()
+    await redis_client.connect(str(settings.REDIS_URL))
     yield
     # shut down
-    pass
+    await redis_client.disconnect()
 
 
 app = FastAPI(

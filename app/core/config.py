@@ -7,6 +7,7 @@ from pydantic import (
     HttpUrl,
     PostgresDsn,
     field_validator,
+    RedisDsn
 )
 
 
@@ -74,6 +75,8 @@ class Settings(BaseSettings):
         )
 
     ENABLE_METRICS: bool = False
+
+    REDIS_URL: RedisDsn
     
 
 settings = Settings()  # type: ignore
