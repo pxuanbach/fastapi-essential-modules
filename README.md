@@ -65,3 +65,51 @@ To roll back to a specific revision:
 ```bash
 alembic downgrade <<revision_id>>
 ```
+
+## Logging
+
+Everything is wrapped up in a function (`app/core/logger.py`) and it's just a matter of calling the function when initializing the application.
+
+```python
+from app.core.logger import setup as setup_logging\
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # start up
+    setup_logging()
+    yield
+    # shut down
+    pass
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    openapi_url=f"{settings.API_STR}{settings.API_VERSION_STR}/openapi.json",
+    generate_unique_id_function=custom_generate_unique_id,
+    lifespan=lifespan
+)
+```
+
+See the example in `app/api/utils.py`.
+
+```python
+from typing import Any
+from fastapi import APIRouter, BackgroundTasks, Query
+import logging
+
+router = APIRouter(prefix="/utils")
+
+@router.post("/logs")
+async def create_log(
+    bg_tasks: BackgroundTasks,
+    text: str = Query('')
+) -> Any:
+    bg_tasks.add_task(logging.info, text)
+    return { "success": True }
+```
+
+Test with [curl](https://curl.se/).
+```bash
+curl --request POST \
+  --url 'http://localhost:8000/api/v1/utils/logs?text=This%20is%20log'
+```
+
