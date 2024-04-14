@@ -106,3 +106,10 @@ async def create_log(
     bg_tasks.add_task(logging.info, text)
     return { "success": True }
 ```
+
+Test with [curl](https://curl.se/).
+```bash
+curl --request POST \
+  --url 'http://localhost:8000/api/v1/utils/logs?text=This%20is%20log'
+```
+
