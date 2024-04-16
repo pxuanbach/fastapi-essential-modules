@@ -1,31 +1,36 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Tuple
+from urllib.parse import urlencode
 from fastapi import Request
+from fastapi.datastructures import QueryParams
 
 from app.core.redis import redis_client
 from app.utils import ORJsonCoder
 
 
+def query_params_builder(params: QueryParams) -> str:
+    sorted_query_params = sorted(params.items())
+    return urlencode(sorted_query_params, doseq=True)
+
+
 def req_key_builder(req: Request, **kwargs):
-    return ":".join([req.method.lower(), req.url.path, req.query_params])
+    return ":".join([req.method.lower(), req.url.path, query_params_builder(req.query_params)])
 
 
-def cache(req: Request, data: Any, expire: int = 60):
-    redis_client.set(req_key_builder(req), json.encoder(data), ex=expire)
+async def add(req: Request, data: Any, expire: int = 60):   
+    cached = await redis_client.add_to_cache(req_key_builder(req), data, expire)
+    if not cached:
+        return False
     return True
 
-def add_to_cache(key: str, value: Dict, expire: int) -> bool:
-    response_data = None
-    try:
-        response_data = ORJsonCoder().encode(value)
-    except TypeError:
-        message = f"Object of type {type(value)} is not JSON-serializable"
-        logging.error(message)
-        return False
-    cached = redis_client.set(name=key, value=response_data, ex=expire)
-    if cached:
-        logging.info(f"{key} added to cache")
-    else:  # pragma: no cover
-        logging.warning(f"Failed to cache key {key}")
-    return cached
+
+async def check_exist(req: Request) -> str:
+    key = req_key_builder(req)
+    logging.info(key)
+    ttl, in_cache = await redis_client.check_cache(key)
+    return in_cache
+
+
+def load_cache_data(data: str):
+    return ORJsonCoder().decode(data)

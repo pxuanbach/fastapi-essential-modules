@@ -1,6 +1,8 @@
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 import redis.asyncio as aioredis
 import logging
+
+from app.utils import ORJsonCoder
 
 
 class RedisClient:
@@ -12,13 +14,25 @@ class RedisClient:
             return True
         logging.warning("Cannot connect to Redis")
         return False
-        
-    def set(self, key: str, response_data: Any, expire=60):
-        return self.redis.set(name=key, value=response_data, ex=expire)
     
-    def check_cache(self, key: str) -> Tuple[int, str]:
+    async def add_to_cache(self, key: str, value: Dict, expire: int) -> bool:
+        response_data = None
+        try:
+            response_data = ORJsonCoder().encode(value)
+        except TypeError:
+            message = f"Object of type {type(value)} is not JSON-serializable"
+            logging.error(message)
+            return False
+        cached = await self.redis.set(name=key, value=response_data, ex=expire)
+        if cached:
+            logging.info(f"{key} added to cache")
+        else:  # pragma: no cover
+            logging.warning(f"Failed to cache key {key}")
+        return cached
+    
+    async def check_cache(self, key: str) -> Tuple[int, str]:
         pipe = self.redis.pipeline()
-        ttl, in_cache = pipe.ttl(key).get(key).execute()
+        ttl, in_cache = await pipe.ttl(key).get(key).execute()
         if in_cache:
             logging.info(f"Key {key} found in cache")
         return (ttl, in_cache)

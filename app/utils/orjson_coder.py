@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 from fastapi.encoders import jsonable_encoder
 import orjson
 
@@ -11,5 +11,5 @@ class ORJsonCoder:
             option=orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY,
         )
 
-    def decode(cls, value: bytes) -> Any:
+    def decode(cls, value: Union[bytes | str]) -> Any:
         return orjson.loads(value)
