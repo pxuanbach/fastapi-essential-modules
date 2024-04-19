@@ -1,6 +1,4 @@
-import json
-import logging
-from typing import Any, Callable, Dict, Tuple
+from typing import Any
 from urllib.parse import urlencode
 from fastapi import Request
 from fastapi.datastructures import QueryParams
@@ -27,7 +25,6 @@ async def add(req: Request, data: Any, expire: int = 60):
 
 async def check_exist(req: Request) -> str:
     key = req_key_builder(req)
-    logging.info(key)
     ttl, in_cache = await redis_client.check_cache(key)
     return in_cache
 

@@ -8,6 +8,7 @@ This project uses [Python](https://www.python.org/) 3.10 as the environment and 
 1. [Quickstart](#quickstart)
 2. [Migration](#migration)
 3. [Logging](#logging)
+4. [Caching](#caching)
 
 ## Quickstart
 1. Open Terminal in this directory.
@@ -73,7 +74,7 @@ alembic downgrade <<revision_id>>
 Everything is wrapped up in a function (`app/core/logger.py`) and it's just a matter of calling the function when initializing the application.
 
 ```python
-from app.core.logger import setup as setup_logging\
+from app.core.logger import setup as setup_logging
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -85,29 +86,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_STR}{settings.API_VERSION_STR}/openapi.json",
-    generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan
 )
 ```
 
 See the example in `app/api/utils.py`.
-
-```python
-from typing import Any
-from fastapi import APIRouter, BackgroundTasks, Query
-import logging
-
-router = APIRouter(prefix="/utils")
-
-@router.post("/logs")
-async def create_log(
-    bg_tasks: BackgroundTasks,
-    text: str = Query('')
-) -> Any:
-    bg_tasks.add_task(logging.info, text)
-    return { "success": True }
-```
 
 Test with [curl](https://curl.se/).
 ```bash
@@ -115,3 +98,45 @@ curl --request POST \
   --url 'http://localhost:8000/api/v1/utils/logs?text=This%20is%20log'
 ```
 
+## Caching
+
+Install the [Redis](https://github.com/redis/redis-py) package.
+
+```bash
+poetry add redis   # pip install redis
+```
+
+Adapter for Redis: `app\core\redis.py`. To manage connections and disconnections to Redis
+
+```python
+from app.core.redis import redis_client
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # start up
+    await redis_client.connect(str(settings.REDIS_URL))
+    yield
+    # shut down
+    await redis_client.disconnect()
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    lifespan=lifespan
+)
+```
+
+Caching module: `app\core\cache.py`
+
+See the example in `app\api\user.py`
+
+Test with [curl](https://curl.se/).
+
+```bash
+# Insert 20000 users
+curl --request POST \
+  --url http://localhost:8000/api/v1/users/bulk/20000
+
+# Get 20000 users
+curl --request GET \
+  --url 'http://localhost:8000/api/v1/users?limit=20000&skip=0'
+```

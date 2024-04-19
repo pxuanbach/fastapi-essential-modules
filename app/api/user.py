@@ -12,10 +12,7 @@ from app.models.user import User
 router = APIRouter(prefix="/users")
 
 
-@router.get(
-    "",
-    response_model=List[User]
-)
+@router.get("", response_model=List[User])
 async def get_pagination_cache(
     request: Request,
     bg_tasks: BackgroundTasks,
@@ -23,6 +20,9 @@ async def get_pagination_cache(
     limit: int = Query(20),
     session: AsyncSession = Depends(get_async_session)
 ) -> Any:
+    """
+    Implement logic for caching 
+    """
     in_cache = await cache.check_exist(req=request)
     if in_cache:
         return cache.load_cache_data(in_cache)
