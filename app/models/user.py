@@ -19,6 +19,9 @@ class User(UserBase):
     )
     is_superuser: bool = False
 
+    class Config:
+       read_with_orm_mode = True 
+
 
 class UserInDb(User, table=True):
     __tablename__ = "users"
