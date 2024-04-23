@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     ENABLE_METRICS: bool = False
 
     REDIS_URL: RedisDsn
+    JOB_DATABASE_URI: str = "sqlite:///jobs_db.sqlite"
+
+    # inside app directory
+    JOB_DIR: str = "jobs"
     
 
 settings = Settings()  # type: ignore
