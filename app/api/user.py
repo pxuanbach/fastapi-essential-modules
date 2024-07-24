@@ -1,7 +1,6 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, Query, BackgroundTasks, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
-from fastapi_cache.decorator import cache
 
 from app.crud import user
 from app.core import cache
