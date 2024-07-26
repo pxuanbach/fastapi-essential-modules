@@ -77,6 +77,8 @@ class Settings(BaseSettings):
     ENABLE_METRICS: bool = False
 
     REDIS_URL: RedisDsn
-    
+    MEILISEARCH_URL: str
+    MEILISEARCH_MASTER_KEY: str
+
 
 settings = Settings()  # type: ignore

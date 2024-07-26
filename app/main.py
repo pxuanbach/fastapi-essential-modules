@@ -8,6 +8,10 @@ from app.core.logger import setup as setup_logging
 from app.core.config import settings
 from app.core.redis import redis_client
 from app.api import router
+from app import utils
+
+
+utils.init_json_encode()
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

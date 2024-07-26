@@ -5,7 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.crud import user
 from app.core import cache
 from app.deps.db import get_async_session
-from app.models.user import User
+from app.models.user import User, UserView
 
 
 router = APIRouter(prefix="/users")
@@ -36,7 +36,8 @@ async def get_pagination_cache(
 
 
 @router.post(
-    "/bulk/{num}"
+    "/bulk/{num}",
+    name="user:bulk_insert"
 )
 async def bulk_insert(
     num: int,
@@ -56,4 +57,17 @@ async def get_pagination_cache(
     session: AsyncSession = Depends(get_async_session)
 ) -> Any:
     data = await user.get_pagination(session, skip, limit)
+    return data
+
+
+@router.get(
+    "/view",
+    response_model=List[UserView]
+)
+async def get_pagination_view(
+    skip: int = Query(0),
+    limit: int = Query(20),
+    session: AsyncSession = Depends(get_async_session)
+) -> Any:
+    data = await user.get_pagination_view(session, skip, limit)
     return data

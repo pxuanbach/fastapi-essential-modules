@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 import uuid as uuid_pkg
 from sqlmodel import Field, SQLModel
 
@@ -44,3 +44,14 @@ class UserInDb(User, table=True):
             is_active=is_active,
             is_superuser=is_superuser
         )
+
+
+class UserView(User):
+    class AttrView(SQLModel):
+        title: Optional[str]
+        # id: Optional[uuid_pkg.UUID]
+        # link_id: Optional[uuid_pkg.UUID]
+    
+    attrs: List[AttrView]
+
+    
