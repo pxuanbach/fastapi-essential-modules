@@ -1,0 +1,9 @@
+cron
+year=*
+month=*
+day=*
+week=*
+day_of_week=*
+hour=*
+minute=*
+second=*/10

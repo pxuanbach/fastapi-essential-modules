@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from app.core.logger import setup as setup_logging
 from app.core.config import settings
 from app.core.redis import redis_client
+from app.core.scheduler import scheduler
 from app.api import router
 
 
@@ -21,9 +22,16 @@ async def lifespan(app: FastAPI):
     # start up
     setup_logging()
     await redis_client.connect(str(settings.REDIS_URL))
+
+    try:
+        scheduler.start() 
+    except Exception as e:    
+        logging.error("Unable to Create Schedule Object - [%s]", str(e))   
+
     yield
     # shut down
     await redis_client.disconnect()
+    scheduler.shutdown()
 
 
 app = FastAPI(

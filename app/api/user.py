@@ -50,7 +50,7 @@ async def bulk_insert(
     "/nocache",
     response_model=List[User]
 )
-async def get_pagination_cache(
+async def get_pagination_nocache(
     skip: int = Query(0),
     limit: int = Query(20),
     session: AsyncSession = Depends(get_async_session)

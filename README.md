@@ -9,6 +9,7 @@ This project uses [Python](https://www.python.org/) 3.10 as the environment and 
 2. [Migration](#migration)
 3. [Logging](#logging)
 4. [Caching](#caching)
+5. [Job Scheduler](#job-scheduler)
 
 ## Quickstart
 1. Open Terminal in this directory.
@@ -140,3 +141,30 @@ curl --request POST \
 curl --request GET \
   --url 'http://localhost:8000/api/v1/users?limit=20000&skip=0'
 ```
+
+## Job Scheduler
+
+Install the [APScheduler](https://github.com/agronholm/apscheduler) package.
+
+```bash
+poetry add apscheduler   # pip install apscheduler
+```
+
+Scheduler module: `app\core\scheduler.py`
+
+CRD APIs: `app\api\jobs.py`
+
+Test with scripts in `tests\job_scheduler` folder.
+
+```bash
+python .\tests\job_scheduler\create_cron.py
+
+python .\tests\job_scheduler\create_interval.py
+
+python .\tests\job_scheduler\create_date_job.py
+
+python .\tests\job_scheduler\get_list_jobs.py
+
+python .\tests\job_scheduler\delete_job.py
+```
+
