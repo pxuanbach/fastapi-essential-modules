@@ -47,6 +47,7 @@ async def add_job_to_scheduler(
         )
     
     _timers = obj_in.args
+    # Get timer parameters if `.schedule` file exists
     if obj_in.from_file:
         _timers = {}
         _sched_path = path.join(job_folder, ".schedule")
@@ -55,7 +56,8 @@ async def add_job_to_scheduler(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Schedule file not found"
             )
-    
+
+        # read parameters from `.schedule` file
         sched = read_file_line_by_line(_sched_path)
         for i in range(len(sched)):
             if i == 0 or str(sched[i]).startswith('#') or sched[i] == '' or sched[i] is None:
@@ -64,17 +66,22 @@ async def add_job_to_scheduler(
             _timers.update({
                 _interval_timer[0]: _interval_timer[1]
             })
+    # Get cron-job timer parameters if type equals "cron"
     if obj_in.type == "cron":
         _timers = CronArgs.model_validate(_timers)
+    # Get interval-job timer parameters if type equals "interval"
     elif obj_in.type == "interval":
         _timers = IntervalArgs.model_validate(_timers)
+    # Get date-off job timer parameters if type equals "date"
     elif obj_in.type == "date":
         _timers = DateArgs.model_validate(_timers)
 
-    _job_model = importlib.import_module(f"app.jobs.{obj_in.job_id}.main")
+    # find job module in `./app/jobs` folder, 
+    # register the `call` function inside the module to the scheduler with timer parameters
+    _job_module = importlib.import_module(f"app.jobs.{obj_in.job_id}.main")
     try:
         job = scheduler.add_job(
-            _job_model.call, 
+            _job_module.call, 
             obj_in.type, 
             id=obj_in.job_id,
             **_timers.model_dump(exclude_none=True)
@@ -92,8 +99,8 @@ async def add_job_to_scheduler(
             detail="An error occurred"
         )
     return JobCreateDeleteResponse(
-        scheduled = True,
-        job_id = job.id
+        scheduled=True,
+        job_id=job.id
     )
 
 
