@@ -1,6 +1,8 @@
 from typing import Any
-from fastapi import APIRouter, BackgroundTasks, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 import logging
+
+from app.core.rate_limiter import RateLimiter
 
 
 router = APIRouter(prefix="/utils")
@@ -29,4 +31,12 @@ async def create_log(
         logging.critical,
         text
     )
+    return { "success": True }
+
+
+@router.get(
+    "/limiting",
+    dependencies=[Depends(RateLimiter("5/1m"))]
+)
+async def test_rate_limiting():
     return { "success": True }
