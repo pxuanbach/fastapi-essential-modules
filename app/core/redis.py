@@ -42,6 +42,10 @@ class RedisClient:
             await self.redis.aclose()
             logging.info("Redis disconnected")
         return None
+    
+    @staticmethod
+    def decode_cache(data: str):
+        return ORJsonCoder().decode(data)
 
 
 redis_client = RedisClient()

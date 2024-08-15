@@ -3,8 +3,7 @@ from urllib.parse import urlencode
 from fastapi import Request
 from fastapi.datastructures import QueryParams
 
-from app.core.redis import redis_client
-from app.utils import ORJsonCoder
+from app.core.redis import redis_client, RedisClient
 
 
 def query_params_builder(params: QueryParams) -> str:
@@ -29,5 +28,5 @@ async def check_exist(req: Request) -> str:
     return in_cache
 
 
-def load_cache_data(data: str):
-    return ORJsonCoder().decode(data)
+def load_cache_data(in_cache):
+    return RedisClient.decode_cache(in_cache)
