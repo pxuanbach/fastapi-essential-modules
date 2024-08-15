@@ -32,6 +32,7 @@ def retrieve_rule(rule: str):
         duration = re.search(PATTERN, rule).group(3)
         period = re.search(PATTERN, rule).group(4)
         limit = int(limit)
+        duration = int(duration)
     except (re.error, AttributeError, ValueError):
         raise RetrieveRuleException
     
