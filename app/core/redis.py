@@ -46,6 +46,11 @@ class RedisClient:
     @staticmethod
     def decode_cache(data: str):
         return ORJsonCoder().decode(data)
+    
+    async def ping(self):
+        if await self.redis.ping():
+            return True
+        return False
 
 
 redis_client = RedisClient()

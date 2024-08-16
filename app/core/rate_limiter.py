@@ -1,7 +1,7 @@
 import re
 import time
 from typing import Any, Final
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, status
 
 from app.core.redis import redis_client, RedisClient
 from app.models.rate_limit import CachedRateLimit
@@ -57,7 +57,8 @@ class RateLimiter():
         self,
         rule: str,
         exception_message: str = "Too many Request!",
-        exception_status: int = 400
+        exception_status: int = status.HTTP_429_TOO_MANY_REQUESTS,
+        redis: RedisClient = redis_client,
     ) -> None:
         (
             self.limit,  # count requests in duration time
@@ -65,14 +66,19 @@ class RateLimiter():
         ) = retrieve_rule(rule)
         self.exp_message = exception_message
         self.exp_status = exception_status
+        if redis_client:
+            self.redis_client = redis
 
     async def __call__(
         self,
         request: Request
     ) -> Any:
+        if not self.redis_client.ping():
+            raise HTTPException("Redis is not available.")
+
         key = req_key_builder(request)  
         current_time = time.time()
-        ttl, in_cache = await redis_client.check_cache(key)
+        _, in_cache = await self.redis_client.check_cache(key)
 
         if in_cache is None:
             # initialize cache
@@ -80,10 +86,9 @@ class RateLimiter():
                 last_hit_time=current_time,
                 count=1
             )
-            await redis_client.add_to_cache(
+            await self.redis_client.add_to_cache(
                 key, cached_data.model_dump(), self.duration_in_second)
             return True
-
 
         cached_data = CachedRateLimit.model_validate(
             RedisClient.decode_cache(in_cache))
@@ -100,6 +105,6 @@ class RateLimiter():
             else: 
                 cached_data.count += 1
 
-            await redis_client.add_to_cache(
+            await self.redis_client.add_to_cache(
                 key, cached_data.model_dump(), self.duration_in_second)
         return True
