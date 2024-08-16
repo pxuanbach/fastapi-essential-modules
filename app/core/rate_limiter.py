@@ -3,7 +3,8 @@ import time
 from typing import Any, Final
 from fastapi import Request, HTTPException, status
 
-from app.core.redis import redis_client, RedisClient
+from app.core.redis import redis_client, RedisClient, NoScriptError
+from app.core.lua_script import SLIDING_WINDOW_COUNTER
 from app.models.rate_limit import CachedRateLimit
 
 
@@ -12,6 +13,12 @@ PATTERN: Final[str] = "(\d+)\/((\d+)(s|m|h))+"
 
 class BaseRateLimiterException(Exception):
     pass
+
+
+class RedisUnavailableException(BaseRateLimiterException):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+        self.msg = "Redis is not available."
 
 
 class RetrieveRuleException(BaseRateLimiterException):
@@ -44,12 +51,7 @@ def retrieve_rule(rule: str):
         duration_in_s = duration * 60
     elif period == "h":
         duration_in_s = duration * 60 * 60
-
     return limit, duration_in_s
-
-
-def req_key_builder(req: Request, **kwargs):
-    return ":".join([req.method.lower(), req.client.host, req.url.path])
 
 
 class RateLimiter():
@@ -59,52 +61,44 @@ class RateLimiter():
         exception_message: str = "Too many Request!",
         exception_status: int = status.HTTP_429_TOO_MANY_REQUESTS,
         redis: RedisClient = redis_client,
+        lua_script: str = SLIDING_WINDOW_COUNTER
     ) -> None:
         (
             self.limit,  # count requests in duration time
             self.duration_in_second
         ) = retrieve_rule(rule)
+        print(self.limit, self.duration_in_second)
         self.exp_message = exception_message
         self.exp_status = exception_status
         if redis_client:
             self.redis_client = redis
+        self.lua_script = lua_script
+        self.lua_sha = ""
+    
+    @staticmethod
+    def req_key_builder(req: Request, **kwargs):
+        return ":".join([req.method.lower(), req.client.host, req.url.path])
+
+    async def check(self, key: str, ):
+        return await self.redis_client.evaluate_sha(
+            self.lua_sha, 1, [key, str(self.duration_in_second), str(self.limit)]
+        )
 
     async def __call__(
         self,
         request: Request
     ) -> Any:
         if not self.redis_client.ping():
-            raise HTTPException("Redis is not available.")
+            raise RedisUnavailableException
 
-        key = req_key_builder(request)  
-        current_time = time.time()
-        _, in_cache = await self.redis_client.check_cache(key)
-
-        if in_cache is None:
-            # initialize cache
-            cached_data = CachedRateLimit(
-                last_hit_time=current_time,
-                count=1
-            )
-            await self.redis_client.add_to_cache(
-                key, cached_data.model_dump(), self.duration_in_second)
-            return True
-
-        cached_data = CachedRateLimit.model_validate(
-            RedisClient.decode_cache(in_cache))
+        key = self.req_key_builder(request)  
         
-        if (
-            (current_time - cached_data.last_hit_time) < self.duration_in_second 
-            and cached_data.count >= self.limit
-        ):
-            raise HTTPException(status_code=self.exp_status, detail=self.exp_message)
-        else:
-            cached_data.last_hit_time = current_time
-            if cached_data.count >= self.limit:
-                cached_data.count = 1  
-            else: 
-                cached_data.count += 1
+        try:
+            is_valid = await self.check(key)
+        except NoScriptError:
+            self.lua_sha = await self.redis_client.load_script(self.lua_script)
+            is_valid = await self.check(key)
 
-            await self.redis_client.add_to_cache(
-                key, cached_data.model_dump(), self.duration_in_second)
-        return True
+        if is_valid == 0:
+            return True
+        raise HTTPException(status_code=self.exp_status, detail=self.exp_message)

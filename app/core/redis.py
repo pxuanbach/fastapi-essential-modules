@@ -1,5 +1,6 @@
 from typing import Any, Dict, Tuple
 import redis.asyncio as aioredis
+from redis.exceptions import NoScriptError
 import logging
 
 from app.utils import ORJsonCoder
@@ -51,6 +52,12 @@ class RedisClient:
         if await self.redis.ping():
             return True
         return False
+    
+    async def load_script(self, script: str):
+        return await self.redis.script_load(script)
+    
+    async def evaluate_sha(self, sha: str, keys_len: int, values = []):
+        return await self.redis.evalsha(sha, keys_len, *values)
 
 
 redis_client = RedisClient()
