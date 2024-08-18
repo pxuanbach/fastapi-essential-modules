@@ -5,7 +5,6 @@ from fastapi import Request, HTTPException, status
 
 from app.core.redis import redis_client, RedisClient, NoScriptError
 from app.core.lua_script import SLIDING_WINDOW_COUNTER
-from app.models.rate_limit import CachedRateLimit
 
 
 PATTERN: Final[str] = "(\d+)\/((\d+)(s|m|h))+"
@@ -43,10 +42,10 @@ def retrieve_rule(rule: str):
     except (re.error, AttributeError, ValueError):
         raise RetrieveRuleException
     
-    if limit < 1:
+    if limit < 1 or duration < 0:
         raise LimitRuleException
 
-    duration_in_s = duration
+    duration_in_s = duration    # second
     if period == "m":
         duration_in_s = duration * 60
     elif period == "h":
@@ -67,7 +66,6 @@ class RateLimiter():
             self.limit,  # count requests in duration time
             self.duration_in_second
         ) = retrieve_rule(rule)
-        print(self.limit, self.duration_in_second)
         self.exp_message = exception_message
         self.exp_status = exception_status
         if redis_client:
@@ -79,20 +77,16 @@ class RateLimiter():
     def req_key_builder(req: Request, **kwargs):
         return ":".join([req.method.lower(), req.client.host, req.url.path])
 
-    async def check(self, key: str, ):
+    async def check(self, key: str, **kwargs):
         return await self.redis_client.evaluate_sha(
-            self.lua_sha, 1, [key, str(self.duration_in_second), str(self.limit)]
+            self.lua_sha, 1, [key, self.duration_in_second, self.limit]
         )
 
-    async def __call__(
-        self,
-        request: Request
-    ) -> Any:
-        if not self.redis_client.ping():
+    async def __call__(self, request: Request) -> Any:
+        if not await self.redis_client.ping():
             raise RedisUnavailableException
 
         key = self.req_key_builder(request)  
-        
         try:
             is_valid = await self.check(key)
         except NoScriptError:

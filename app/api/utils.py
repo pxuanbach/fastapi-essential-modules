@@ -35,8 +35,16 @@ async def create_log(
 
 
 @router.get(
-    "/limiting",
+    "/limiting1",
     dependencies=[Depends(RateLimiter("5/15s"))]
 )
-async def test_rate_limiting():
+async def test_rate_limiting1():
+    return { "success": True }
+
+
+@router.get(
+    "/limiting2",
+    dependencies=[Depends(RateLimiter("1/1m"))]
+)
+async def test_rate_limiting2():
     return { "success": True }
