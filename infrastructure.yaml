@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:12
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 11111111
+      POSTGRES_DB: app
+    restart: always
+    volumes:
+      - app-db-data:/var/lib/postgresql/data:cached
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.9
+    ports:
+      - 7700:7700
+    environment:
+      MEILI_ENV: development
+      MEILI_MASTER_KEY: 98sq_hu8eExqKKZQ5mTMhx3MLinMkElxcWIEeDWtNks
+    restart: always
+    volumes:
+      - meili_data:/meili_data
+    
+  redis:
+    image: redis:alpine3.18
+    restart: always
+    ports:
+      - 6379:6379
+
+volumes:
+  app-db-data:
+  meili_data:

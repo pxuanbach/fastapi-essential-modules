@@ -10,6 +10,7 @@ This project uses [Python](https://www.python.org/) 3.10 as the environment and 
 3. [Logging](#logging)
 4. [Caching](#caching)
 5. [Job Scheduler](#job-scheduler)
+6. [Rate-limiting](#rate-limiting)
 
 ## Quickstart
 1. Open Terminal in this directory.
@@ -166,5 +167,19 @@ python .\tests\job_scheduler\create_date_job.py
 python .\tests\job_scheduler\get_list_jobs.py
 
 python .\tests\job_scheduler\delete_job.py
+```
+
+## Rate-limiting
+
+Rate-limiting module: `app/core/rate_limiter.py`
+
+Test APIs: `app/api/utils.py`
+
+Test with scripts in `tests\rate_limiting` folder.
+
+```bash
+python .\tests\rate_limiting\test_rate_limit_1.py
+
+python .\tests\rate_limiting\test_rate_limit_2.py
 ```
 
