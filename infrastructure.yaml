@@ -11,16 +11,16 @@ services:
     volumes:
       - app-db-data:/var/lib/postgresql/data:cached
 
-  meilisearch:
-    image: getmeili/meilisearch:v1.9
-    ports:
-      - 7700:7700
-    environment:
-      MEILI_ENV: development
-      MEILI_MASTER_KEY: 98sq_hu8eExqKKZQ5mTMhx3MLinMkElxcWIEeDWtNks
-    restart: always
-    volumes:
-      - meili_data:/meili_data
+  # meilisearch:
+  #   image: getmeili/meilisearch:v1.9
+  #   ports:
+  #     - 7700:7700
+  #   environment:
+  #     MEILI_ENV: development
+  #     MEILI_MASTER_KEY: 98sq_hu8eExqKKZQ5mTMhx3MLinMkElxcWIEeDWtNks
+  #   restart: always
+  #   volumes:
+  #     - meili_data:/meili_data
     
   redis:
     image: redis:alpine3.18

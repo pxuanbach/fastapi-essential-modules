@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.core.logger import setup as setup_logging
 from app.core.config import settings
@@ -21,13 +22,14 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 async def lifespan(app: FastAPI):
     # start up
     setup_logging()
+    instrumentator.expose(app)
     await redis_client.connect(str(settings.REDIS_URL))
 
     try:
         scheduler.start() 
     except Exception as e:    
         logging.error("Unable to Create Schedule Object - [%s]", str(e))   
-
+    
     yield
     # shut down
     await redis_client.disconnect()
@@ -40,6 +42,12 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan
 )
+
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    excluded_handlers=[".*admin.*", "/metrics"],
+).instrument(app)
 
 
 # Set all CORS enabled origins
