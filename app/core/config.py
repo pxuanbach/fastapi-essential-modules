@@ -1,6 +1,7 @@
-from typing import Annotated, Any, Dict, Literal, Optional
+import sys
+from typing import Annotated, Any, Literal, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic_core.core_schema import FieldValidationInfo
+from pydantic_core.core_schema import ValidationInfo
 from pydantic import (
     AnyUrl,
     BeforeValidator,
@@ -43,11 +44,12 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str = ""
+    POSTGRES_TEST_DB: str = ""
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
     SQLALCHEMY_DATABASE_URI_ASYNC: Optional[AsyncPostgresDsn] = None
 
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
-    def assemble_db_connection(cls, v: Optional[str], info: FieldValidationInfo) -> Any:
+    def assemble_db_connection(cls, v: Optional[str], info: ValidationInfo) -> Any:
         if isinstance(v, str):
             return v
         return PostgresDsn.build(
@@ -56,12 +58,12 @@ class Settings(BaseSettings):
             password=info.data.get("POSTGRES_PASSWORD"),
             host=info.data.get("POSTGRES_SERVER"),
             port=info.data.get("POSTGRES_PORT"),
-            path=f"{info.data.get('POSTGRES_DB') or ''}",
+            path=f"{info.data.get('POSTGRES_TEST_DB' if 'pytest' in sys.modules else 'POSTGRES_DB')}",
         )
 
     @field_validator("SQLALCHEMY_DATABASE_URI_ASYNC", mode="before")
     def assemble_async_db_connection(
-        cls, v: Optional[str], info: FieldValidationInfo
+        cls, v: Optional[str], info: ValidationInfo
     ) -> Any:
         if isinstance(v, str):
             return v
@@ -71,7 +73,7 @@ class Settings(BaseSettings):
             password=info.data.get("POSTGRES_PASSWORD"),
             host=info.data.get("POSTGRES_SERVER"),
             port=info.data.get("POSTGRES_PORT"),
-            path=f"{info.data.get('POSTGRES_DB') or ''}",
+            path=f"{info.data.get('POSTGRES_TEST_DB' if 'pytest' in sys.modules else 'POSTGRES_DB') or ''}",
         )
 
     ENABLE_METRICS: bool = False
@@ -81,6 +83,6 @@ class Settings(BaseSettings):
 
     # inside app directory
     JOB_DIR: str = "jobs"
-    
+
 
 settings = Settings()  # type: ignore
