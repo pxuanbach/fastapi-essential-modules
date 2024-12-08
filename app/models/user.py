@@ -1,6 +1,10 @@
-from typing import Optional
+from typing import List, Optional
 import uuid as uuid_pkg
-from sqlmodel import Field, SQLModel
+from pydantic import ConfigDict
+from sqlmodel import Field, Relationship, SQLModel
+from sqlalchemy.orm import relationship
+
+from app.models.resource import ResourceInDb
 
 
 # Shared properties
@@ -19,14 +23,21 @@ class User(UserBase):
     )
     is_superuser: bool = False
 
-    class Config:
-       read_with_orm_mode = True 
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserInDb(User, table=True):
     __tablename__ = "users"
 
     hashed_password: str
+
+    resources: List[ResourceInDb] = Relationship(
+        sa_relationship=relationship(
+            "ResourceInDb",
+            primaryjoin="and_(foreign(ResourceInDb.object_id)==UserInDb.id, ResourceInDb.object_type=='user')",
+            viewonly=True,
+        )
+    )
 
     @classmethod
     def create(
